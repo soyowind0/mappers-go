@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/core/model"
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/core/mqtt"
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/core/store"
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/utils/encode"
+)
+
+const (
+	StatusOK      = "ok"
+	StatusError   = "error"
+	StatusWaiting = "waiting"
+	StatusWorking = "working"
 )
 
 type Mission struct {
@@ -54,7 +62,7 @@ func NewMission(config MissionConfig) (client *Mission, err error) {
 	}
 
 	var mission model.Mission
-	if store.DB.Model(&mission).Where("unique_name = ?", config.UniqueName).Find(&mission).RowsAffected > 0 && mission.Status != "working" {
+	if store.DB.Model(&mission).Where("unique_name = ?", config.UniqueName).Find(&mission).RowsAffected > 0 && mission.Status != StatusWorking {
 		client.Config.UniqueName = mission.UniqueName
 		client.Config.Command = mission.Command
 		client.Config.FileContent = mission.FileContent
@@ -68,9 +76,9 @@ func NewMission(config MissionConfig) (client *Mission, err error) {
 
 	client.exec.Cmd = exec.Command("powershell", "-c", client.Config.Command)
 	client.exec.Cmd.Dir = client.Config.WorkingDirectory
-	client.Status = "waiting"
+	client.Status = StatusWaiting
 
-	if mission.Status == "working" {
+	if mission.Status == StatusWorking {
 		client.UpdateDB()
 	} else {
 		client.InsertDB()
@@ -92,7 +100,6 @@ func RemoveMission(id string) {
 	}
 
 	cache.Delete(id)
-
 }
 
 func (c *Mission) InsertDB() {
@@ -125,7 +132,7 @@ func (c *Mission) UpdateDB() {
 }
 
 func (c *Mission) Run() {
-	if c.Status == "ok" || c.Status == "error" || c.Status == "working" {
+	if c.Status == StatusOK || c.Status == StatusError || c.Status == StatusWorking {
 		klog.Info("Mission status is not waiting, skip with current status ", c.Status)
 		return
 	}
@@ -136,19 +143,22 @@ func (c *Mission) Run() {
 		klog.Info("Mission finished: ", c.Config.UniqueName, " result: ", c.Status)
 	}()
 
-	c.Status = "working"
+	c.Status = StatusWorking
 	c.ReportMissionStatus()
 	klog.Info("Mission start: ", c.Config.UniqueName, " status: ", c.Status, " output: ", c.Output)
 
 	// clean working directory in  windows
 	dir := c.Config.WorkingDirectory
 	os.RemoveAll(dir)
-	os.MkdirAll(dir, os.ModePerm)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		klog.Errorf("Failed to make workdir %s: %v", dir, err)
+		return
+	}
 
-	file, err := os.Create(dir + "/" + c.Config.FileName)
+	file, err := os.Create(filepath.Join(dir, c.Config.FileName))
 	if err != nil {
 		klog.Error("Create file error: ", err)
-		c.Status = "error"
+		c.Status = StatusError
 		c.Output = err.Error()
 		return
 	}
@@ -157,7 +167,7 @@ func (c *Mission) Run() {
 
 	if err != nil {
 		klog.Error("Write file error: ", err)
-		c.Status = "error"
+		c.Status = StatusError
 		c.Output = err.Error()
 		return
 	}
@@ -165,12 +175,12 @@ func (c *Mission) Run() {
 	err = c.exec.Exec()
 	if err != nil {
 		klog.Error("Exec error: ", err)
-		c.Status = "error"
+		c.Status = StatusError
 		c.Output = fmt.Sprintf("【msg】%s\n【err】%s\n", err.Error(), string(c.exec.StdErr))
 		return
 	}
 
-	c.Status = "ok"
+	c.Status = StatusOK
 	c.Output = string(c.exec.StdOut)
 }
 

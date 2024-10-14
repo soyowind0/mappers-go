@@ -6,7 +6,7 @@ import (
 	"path"
 
 	mq "github.com/eclipse/paho.mqtt.golang"
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/core/mqtt"
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/dto"
@@ -56,15 +56,15 @@ func onMembershipUpdateMessage(_ mq.Client, message mq.Message) {
 	klog.Info("Receive device list update: ", "nodeId: ", nodeId, " update: ", len(req.AddedDevices), " delete: ", len(req.RemovedDevices))
 
 	for _, device := range req.RemovedDevices {
-		RemoveMission(device.Id)
+		RemoveMission(device.ID)
 	}
 
 	for _, device := range req.RemovedDevices {
-		if _, ok := cache.Load(device.Id); ok {
-			klog.Info("Device already exists: ", device.Id)
+		if _, ok := cache.Load(device.ID); ok {
+			klog.Info("Device already exists: ", device.ID)
 			continue
 		}
-		klog.Info("Waiting twin update to create device: ", device.Id)
+		klog.Info("Waiting twin update to create device: ", device.ID)
 	}
 }
 
@@ -84,7 +84,7 @@ func onMembershipListMessage(_ mq.Client, message mq.Message) {
 
 	klog.Info("Receive device list: ", "nodeId: ", nodeId, " count: ", len(req.Devices))
 	for _, device := range req.Devices {
-		_err := mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.Id), mqtt.CreateEmptyMessage())
+		_err := mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.ID), mqtt.CreateEmptyMessage())
 		if _err != nil {
 			klog.Error("Publish error: ", _err)
 			return

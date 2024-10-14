@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/signal"
 
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/config"
 	"github.com/kubeedge/mappers-go/mappers/windows-virtual-exec/internal/core/model"
@@ -26,7 +26,9 @@ func main() {
 	}
 
 	store.InitDB("internal.db")
-	store.DB.AutoMigrate(&model.Mission{})
+	if err := store.DB.AutoMigrate(&model.Mission{}); err != nil {
+		klog.Errorf("Failed to init db: %v", err)
+	}
 
 	mqtt.Client = &mqtt.MqttClient{
 		IP:         c.Mqtt.ServerAddress,

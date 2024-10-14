@@ -74,16 +74,14 @@ function build() {
   local arch=${os_arch[1]}
   GOOS=${os} GOARCH=${arch} CGO_ENABLED=0 go build \
     -ldflags "${flags} ${ext_flags}" \
-    -o "${CURR_DIR}/bin/${mapper}_${os}_${arch}" \
+    -o "${CURR_DIR}/bin/${mapper}_${os}_${arch}.exe" \
     "${CURR_DIR}/cmd/main.go"
 
-  cp ${CURR_DIR}/bin/${mapper}_${os}_${arch} ${CURR_DIR}/bin/${mapper}
   echo "...done"
 }
 
 function package() {
   echo "docker package not support for windows virtual exec driver"
-  exit 1
 }
 
 function clean() {

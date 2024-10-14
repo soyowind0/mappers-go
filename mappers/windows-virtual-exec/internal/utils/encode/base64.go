@@ -3,7 +3,7 @@ package encode
 import (
 	"encoding/base64"
 
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 )
 
 func DecodeBase64(encodedString string) string {
