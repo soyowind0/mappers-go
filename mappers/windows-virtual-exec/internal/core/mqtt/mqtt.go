@@ -30,10 +30,14 @@ const (
 	TopicRecNodeDeviceUpdate = "$hw/events/node/%s/membership/updated"
 )
 
-var Client *MqttClient
+var client *Client
+
+func GetClient() *Client {
+	return client
+}
 
 // MqttClient is parameters for Mqtt client.
-type MqttClient struct {
+type Client struct {
 	Qos        byte
 	Retained   bool
 	IP         string
@@ -42,6 +46,17 @@ type MqttClient struct {
 	Cert       string
 	PrivateKey string
 	Client     mqtt.Client
+}
+
+func InitClient(ip, user, passwd, cert, privkey string) error {
+	client = &Client{
+		IP:         ip,
+		User:       user,
+		Passwd:     passwd,
+		Cert:       cert,
+		PrivateKey: privkey,
+	}
+	return client.Connect()
 }
 
 // newTLSConfig new TLS configuration.
@@ -70,7 +85,7 @@ func newTLSConfig(certfile string, privateKey string) (*tls.Config, error) {
 }
 
 // Connect connect to the Mqtt server.
-func (mc *MqttClient) Connect() error {
+func (mc *Client) Connect() error {
 	opts := mqtt.NewClientOptions().AddBroker(mc.IP).SetClientID("").SetCleanSession(true)
 	if mc.Cert != "" {
 		tlsConfig, err := newTLSConfig(mc.Cert, mc.PrivateKey)
@@ -95,7 +110,7 @@ func (mc *MqttClient) Connect() error {
 }
 
 // Publish publish Mqtt message.
-func (mc *MqttClient) Publish(topic string, payload interface{}) error {
+func (mc *Client) Publish(topic string, payload interface{}) error {
 	if tc := mc.Client.Publish(topic, mc.Qos, mc.Retained, payload); tc.Wait() && tc.Error() != nil {
 		return tc.Error()
 	}
@@ -103,7 +118,7 @@ func (mc *MqttClient) Publish(topic string, payload interface{}) error {
 }
 
 // Subscribe subscribe a Mqtt topic.
-func (mc *MqttClient) Subscribe(topic string, onMessage mqtt.MessageHandler) error {
+func (mc *Client) Subscribe(topic string, onMessage mqtt.MessageHandler) error {
 	if tc := mc.Client.Subscribe(topic, mc.Qos, onMessage); tc.Wait() && tc.Error() != nil {
 		return tc.Error()
 	}

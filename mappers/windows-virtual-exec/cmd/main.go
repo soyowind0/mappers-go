@@ -30,15 +30,14 @@ func main() {
 		klog.Errorf("Failed to init db: %v", err)
 	}
 
-	mqtt.Client = &mqtt.MqttClient{
-		IP:         c.Mqtt.ServerAddress,
-		User:       c.Mqtt.Username,
-		Passwd:     c.Mqtt.Password,
-		Cert:       c.Mqtt.Cert,
-		PrivateKey: c.Mqtt.PrivateKey,
-	}
-	if err = mqtt.Client.Connect(); err != nil {
-		klog.Fatal(err)
+	if err := mqtt.InitClient(
+		c.Mqtt.ServerAddress,
+		c.Mqtt.Username,
+		c.Mqtt.Password,
+		c.Mqtt.Cert,
+		c.Mqtt.PrivateKey,
+	); err != nil {
+		klog.Error(err)
 		os.Exit(1)
 	}
 

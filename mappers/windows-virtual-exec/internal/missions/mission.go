@@ -191,7 +191,7 @@ func (c *Mission) ReportDeviceStatus() {
 		klog.Errorf("Create message state failed: %v", err)
 		return
 	}
-	if err = mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubDeviceStateUpdateRequest, c.Config.UniqueName), payload); err != nil {
+	if err = mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubDeviceStateUpdateRequest, c.Config.UniqueName), payload); err != nil {
 		klog.Errorf("Publish failed: %v", err)
 		return
 	}
@@ -210,7 +210,7 @@ func (c *Mission) ReportMissionStatus() {
 		klog.Errorf("Create message state failed: %v", err)
 		return
 	}
-	if err = mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubTwinUpdateRequest, c.Config.UniqueName), payload); err != nil {
+	if err = mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinUpdateRequest, c.Config.UniqueName), payload); err != nil {
 		klog.Errorf("Publish failed: %v", err)
 		return
 	}

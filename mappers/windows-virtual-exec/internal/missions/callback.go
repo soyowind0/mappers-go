@@ -13,25 +13,26 @@ import (
 )
 
 func InitCallback(nodeName string) {
-	_err := mqtt.Client.Subscribe(fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName), onMembershipUpdateMessage)
+	mqttClient := mqtt.GetClient()
+	_err := mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName), onMembershipUpdateMessage)
 	if _err != nil {
 		klog.Error("Subscribe error: ", _err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName))
 	}
-	_err = mqtt.Client.Subscribe(fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName), onMembershipListMessage)
+	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName), onMembershipListMessage)
 	if _err != nil {
 		klog.Error("Subscribe error: ", _err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName))
 	}
-	_err = mqtt.Client.Subscribe(fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"), onTwinDelta)
+	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"), onTwinDelta)
 	if _err != nil {
 		klog.Error("Subscribe error: ", _err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"))
 	}
-	_err = mqtt.Client.Subscribe(fmt.Sprintf(mqtt.TopicRecTwinInfoResponse, "+"), onTwinInfo)
+	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecTwinInfoResponse, "+"), onTwinInfo)
 	if _err != nil {
 		klog.Error("Subscribe error: ", _err)
 	} else {
@@ -41,19 +42,19 @@ func InitCallback(nodeName string) {
 
 func onMembershipUpdateMessage(_ mq.Client, message mq.Message) {
 	klog.V(2).Info("Receive message from topic: ", message.Topic())
-	nodeId := mqtt.GetNodeID(message.Topic())
-	if nodeId == "" {
+	nodeID := mqtt.GetNodeID(message.Topic())
+	if nodeID == "" {
 		klog.Error("Wrong topic")
 		return
 	}
-	klog.V(2).Info("Node id: ", nodeId)
+	klog.V(2).Info("Node id: ", nodeID)
 	var req dto.DeviceListUpdate
 	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
 		klog.Error("Unmarshal error: ", _err)
 		return
 	}
 
-	klog.Info("Receive device list update: ", "nodeId: ", nodeId, " update: ", len(req.AddedDevices), " delete: ", len(req.RemovedDevices))
+	klog.Info("Receive device list update: ", "nodeId: ", nodeID, " update: ", len(req.AddedDevices), " delete: ", len(req.RemovedDevices))
 
 	for _, device := range req.RemovedDevices {
 		RemoveMission(device.ID)
@@ -70,21 +71,21 @@ func onMembershipUpdateMessage(_ mq.Client, message mq.Message) {
 
 func onMembershipListMessage(_ mq.Client, message mq.Message) {
 	klog.V(2).Info("Receive message from topic: ", message.Topic())
-	nodeId := mqtt.GetNodeID(message.Topic())
-	if nodeId == "" {
+	nodeID := mqtt.GetNodeID(message.Topic())
+	if nodeID == "" {
 		klog.Error("Wrong topic")
 		return
 	}
-	klog.V(2).Info("Node id: ", nodeId)
+	klog.V(2).Info("Node id: ", nodeID)
 	var req dto.DeviceList
 	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
 		klog.Error("Unmarshal error: ", _err)
 		return
 	}
 
-	klog.Info("Receive device list: ", "nodeId: ", nodeId, " count: ", len(req.Devices))
+	klog.Info("Receive device list: ", "nodeID: ", nodeID, " count: ", len(req.Devices))
 	for _, device := range req.Devices {
-		_err := mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.ID), mqtt.CreateEmptyMessage())
+		_err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.ID), mqtt.CreateEmptyMessage())
 		if _err != nil {
 			klog.Error("Publish error: ", _err)
 			return
@@ -127,7 +128,7 @@ func onTwinDelta(_ mq.Client, message mq.Message) {
 		return
 	}
 
-	_err := mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, id), mqtt.CreateEmptyMessage())
+	_err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, id), mqtt.CreateEmptyMessage())
 	if _err != nil {
 		klog.Error("Publish error: ", _err)
 		return

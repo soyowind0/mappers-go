@@ -9,7 +9,7 @@ import (
 )
 
 func InitMissions(nodeName string) {
-	if err := mqtt.Client.Publish(fmt.Sprintf(mqtt.TopicPubNodeDeviceListRequest, nodeName), mqtt.CreateEmptyMessage()); err != nil {
+	if err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubNodeDeviceListRequest, nodeName), mqtt.CreateEmptyMessage()); err != nil {
 		klog.Errorf("Failed to init missions on %s", nodeName)
 	}
 }
