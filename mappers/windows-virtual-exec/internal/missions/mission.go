@@ -103,7 +103,7 @@ func RemoveMission(id string) {
 }
 
 func (c *Mission) InsertDB() {
-	_err := store.DB.Create(&model.Mission{
+	err := store.DB.Create(&model.Mission{
 		UniqueName:       c.Config.UniqueName,
 		Command:          c.Config.Command,
 		FileContent:      c.Config.FileContent,
@@ -112,13 +112,13 @@ func (c *Mission) InsertDB() {
 		Status:           c.Status,
 		Output:           c.Output,
 	}).Error
-	if _err != nil {
-		klog.Error("InsertDB error: ", _err.Error())
+	if err != nil {
+		klog.Error("InsertDB error: ", err.Error())
 	}
 }
 
 func (c *Mission) UpdateDB() {
-	_err := store.DB.Model(&model.Mission{}).Where("unique_name = ?", c.Config.UniqueName).UpdateColumns(map[string]interface{}{
+	err := store.DB.Model(&model.Mission{}).Where("unique_name = ?", c.Config.UniqueName).UpdateColumns(map[string]interface{}{
 		"status":            c.Status,
 		"output":            c.Output,
 		"command":           c.Config.Command,
@@ -126,8 +126,8 @@ func (c *Mission) UpdateDB() {
 		"file_name":         c.Config.FileName,
 		"working_directory": c.Config.WorkingDirectory,
 	}).Error
-	if _err != nil {
-		klog.Error("InsertDB error: ", _err.Error())
+	if err != nil {
+		klog.Error("InsertDB error: ", err.Error())
 	}
 }
 

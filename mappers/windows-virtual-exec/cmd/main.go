@@ -22,7 +22,6 @@ func main() {
 
 	if err = c.Parse(); err != nil {
 		klog.Fatal(err)
-		os.Exit(1)
 	}
 
 	store.InitDB("internal.db")
@@ -37,8 +36,7 @@ func main() {
 		c.Mqtt.Cert,
 		c.Mqtt.PrivateKey,
 	); err != nil {
-		klog.Error(err)
-		os.Exit(1)
+		klog.Fatal(err)
 	}
 
 	missions.InitCallback(c.NodeName)

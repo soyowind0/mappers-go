@@ -14,27 +14,27 @@ import (
 
 func InitCallback(nodeName string) {
 	mqttClient := mqtt.GetClient()
-	_err := mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName), onMembershipUpdateMessage)
-	if _err != nil {
-		klog.Error("Subscribe error: ", _err)
+	err := mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName), onMembershipUpdateMessage)
+	if err != nil {
+		klog.Error("Subscribe error: ", err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRecNodeDeviceUpdate, nodeName))
 	}
-	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName), onMembershipListMessage)
-	if _err != nil {
-		klog.Error("Subscribe error: ", _err)
+	err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName), onMembershipListMessage)
+	if err != nil {
+		klog.Error("Subscribe error: ", err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRecModeDeviceListResponse, nodeName))
 	}
-	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"), onTwinDelta)
-	if _err != nil {
-		klog.Error("Subscribe error: ", _err)
+	err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"), onTwinDelta)
+	if err != nil {
+		klog.Error("Subscribe error: ", err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRevTwinUpdateDelta, "+"))
 	}
-	_err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecTwinInfoResponse, "+"), onTwinInfo)
-	if _err != nil {
-		klog.Error("Subscribe error: ", _err)
+	err = mqttClient.Subscribe(fmt.Sprintf(mqtt.TopicRecTwinInfoResponse, "+"), onTwinInfo)
+	if err != nil {
+		klog.Error("Subscribe error: ", err)
 	} else {
 		klog.Info("Subscribe topic: ", fmt.Sprintf(mqtt.TopicRecTwinInfoResponse, "+"))
 	}
@@ -49,8 +49,8 @@ func onMembershipUpdateMessage(_ mq.Client, message mq.Message) {
 	}
 	klog.V(2).Info("Node id: ", nodeID)
 	var req dto.DeviceListUpdate
-	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
-		klog.Error("Unmarshal error: ", _err)
+	if err := json.Unmarshal(message.Payload(), &req); err != nil {
+		klog.Error("Unmarshal error: ", err)
 		return
 	}
 
@@ -78,16 +78,16 @@ func onMembershipListMessage(_ mq.Client, message mq.Message) {
 	}
 	klog.V(2).Info("Node id: ", nodeID)
 	var req dto.DeviceList
-	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
-		klog.Error("Unmarshal error: ", _err)
+	if err := json.Unmarshal(message.Payload(), &req); err != nil {
+		klog.Error("Unmarshal error: ", err)
 		return
 	}
 
 	klog.Info("Receive device list: ", "nodeID: ", nodeID, " count: ", len(req.Devices))
 	for _, device := range req.Devices {
-		_err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.ID), mqtt.CreateEmptyMessage())
-		if _err != nil {
-			klog.Error("Publish error: ", _err)
+		err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, device.ID), mqtt.CreateEmptyMessage())
+		if err != nil {
+			klog.Error("Publish error: ", err)
 			return
 		}
 	}
@@ -102,8 +102,8 @@ func onTwinDelta(_ mq.Client, message mq.Message) {
 	}
 	klog.V(2).Info("Mission id: ", id)
 	var req dto.MissionDelta
-	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
-		klog.Error("Unmarshal error: ", _err)
+	if err := json.Unmarshal(message.Payload(), &req); err != nil {
+		klog.Error("Unmarshal error: ", err)
 		return
 	}
 
@@ -128,9 +128,9 @@ func onTwinDelta(_ mq.Client, message mq.Message) {
 		return
 	}
 
-	_err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, id), mqtt.CreateEmptyMessage())
-	if _err != nil {
-		klog.Error("Publish error: ", _err)
+	err := mqtt.GetClient().Publish(fmt.Sprintf(mqtt.TopicPubTwinInfoRequest, id), mqtt.CreateEmptyMessage())
+	if err != nil {
+		klog.Error("Publish error: ", err)
 		return
 	}
 }
@@ -145,8 +145,8 @@ func onTwinInfo(_ mq.Client, message mq.Message) {
 	}
 	klog.V(2).Info("Mission id: ", id)
 	var req dto.MissionDelta
-	if _err := json.Unmarshal(message.Payload(), &req); _err != nil {
-		klog.Error("Unmarshal error: ", _err)
+	if err := json.Unmarshal(message.Payload(), &req); err != nil {
+		klog.Error("Unmarshal error: ", err)
 		return
 	}
 	if req.Twin.ExecCommand == nil || req.Twin.ExecFileName == nil || req.Twin.ExecFileContent == nil || req.Twin.Output == nil || req.Twin.Status == nil {
@@ -169,15 +169,15 @@ func onTwinInfo(_ mq.Client, message mq.Message) {
 		return
 	}
 
-	_, _err := NewMission(MissionConfig{
+	_, err := NewMission(MissionConfig{
 		UniqueName:       id,
 		Command:          *req.Twin.ExecCommand.Expected.Value,
 		FileContent:      *req.Twin.ExecFileContent.Expected.Value,
 		FileName:         *req.Twin.ExecFileName.Expected.Value,
 		WorkingDirectory: path.Join("tmp", id),
 	})
-	if _err != nil {
-		klog.Error("NewMission error: ", _err)
+	if err != nil {
+		klog.Error("NewMission error: ", err)
 		return
 	}
 }
